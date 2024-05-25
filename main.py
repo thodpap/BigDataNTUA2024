@@ -7,7 +7,7 @@ from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import col, rank
 
 
-def Q1_pandas_group_by_year_by_crimes_rank():
+def Q1_df():
     spark = SparkSession.builder.appName("Top3MonthsCrimes").getOrCreate()
 
     df = spark.read.csv("data/Crime_Data_from_2010_to_2019.csv", header=True, inferSchema=True)
@@ -44,7 +44,7 @@ def Q1_parquet_sql():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    Q1_pandas_group_by_year_by_crimes_rank()
+    Q1_df()
 
 
     # Filter
