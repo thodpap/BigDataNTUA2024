@@ -22,7 +22,7 @@ def spark_sql(df):
     df = df.orderBy(col("year"), col("crime_total").desc())
     df = df.where(col("rank") <= 3)
 
-    df.show()
+    # df.show()
 
 def sql_api(spark, df):
     # Create a temporary view from the DataFrame
@@ -47,21 +47,19 @@ def sql_api(spark, df):
         GROUP BY year, month
     """).createOrReplaceTempView("crime_counts")
 
-    # Define a window specification and rank the counts within each year using SQL
-    ranked_df = spark.sql("""
-        SELECT
-            *,
+    top3_months_df = spark.sql("""
+        SELECT * FROM (
+            SELECT *,
             RANK() OVER (PARTITION BY year ORDER BY crime_total DESC) AS rank
-        FROM crime_counts
+            FROM crime_counts
+        ) ranked
+        WHERE ranked.rank <= 3
     """)
 
-    # Filter to get top 3 months by crimes for each year
-    top3_months_df = ranked_df.filter(col("rank") <= 3)
-
     # Show the result
-    top3_months_df.show()
+    # top3_months_df.show()
 
-    return top3_months_df
+    # return top3_months_df
 
 def df_(df):
     pass
@@ -102,6 +100,9 @@ class Q1:
             pass
         else:
             raise ValueError("Wrong value")
+
+    def clear_cache(self):
+        self.spark.catalog.clearCache()
 
 
 # Press the green button in the gutter to run the script.
