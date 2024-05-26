@@ -61,10 +61,6 @@ def sql_api(spark, df):
 
     # return top3_months_df
 
-def df_(df):
-    pass
-
-
 
 class Q1:
     def __init__(self, name, csv_path="data/Crime_Data_from_2010_to_2019.csv", parquet_path="data/Crime_Data_from_2010_to_2019.parquet"):
@@ -95,9 +91,6 @@ class Q1:
             sql_api(self.spark, df)
         elif method == "spark_sql":
             spark_sql(df)
-        elif method == "df":
-            # self.parquet_sql()
-            pass
         else:
             raise ValueError("Wrong value")
 
