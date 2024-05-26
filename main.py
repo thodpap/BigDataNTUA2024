@@ -55,6 +55,13 @@ def Q2_sol():
     print(f"Elapsed Time for csv rdd: {elapsed_time}")
     Q2.clear_cache()
 
+def Q3_sol():
+    from q3 import Q3
+    import time
+
+    Q3 = Q3("Q3")
+    Q3.query()
+
 
 if __name__ == '__main__':
-    Q2_sol()
+    Q3_sol()
