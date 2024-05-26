@@ -1,14 +1,8 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-#!pip install pyspark
-
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import col, rank
 
 
-def sql_(df):
+def spark_sql(df):
     # TODO: Ask about DATE OCC or DATE RPRT
     df = df.withColumn("year", col("DATE OCC").substr(7, 4))
     df = df.withColumn("month", col("DATE OCC").substr(0, 2))
@@ -30,6 +24,49 @@ def sql_(df):
 
     df.show()
 
+def sql_api(spark, df):
+    # Create a temporary view from the DataFrame
+    df.createOrReplaceTempView("crime_data")
+
+    # Extract year and month from DATE OCC using SQL
+    spark.sql("""
+        SELECT 
+            *,
+            substr(`DATE OCC`, 7, 4) AS year,
+            substr(`DATE OCC`, 0, 2) AS month
+        FROM crime_data
+    """).createOrReplaceTempView("crime_data_with_date")
+
+    # Group by year and month, and count occurrences
+    spark.sql("""
+        SELECT
+            year,
+            month,
+            COUNT(*) AS crime_total
+        FROM crime_data_with_date
+        GROUP BY year, month
+    """).createOrReplaceTempView("crime_counts")
+
+    # Define a window specification and rank the counts within each year using SQL
+    ranked_df = spark.sql("""
+        SELECT
+            *,
+            RANK() OVER (PARTITION BY year ORDER BY crime_total DESC) AS rank
+        FROM crime_counts
+    """)
+
+    # Filter to get top 3 months by crimes for each year
+    top3_months_df = ranked_df.filter(col("rank") <= 3)
+
+    # Show the result
+    top3_months_df.show()
+
+    return top3_months_df
+
+def df_(df):
+    pass
+
+
 
 class Q1:
     def __init__(self, name, csv_path="data/Crime_Data_from_2010_to_2019.csv", parquet_path="data/Crime_Data_from_2010_to_2019.parquet"):
@@ -48,24 +85,33 @@ class Q1:
         # Write the DataFrame to Parquet format
         df.write.parquet(self.parquet_path)
 
-    def csv_sql(self):
-        df = self.spark.read.csv("data/Crime_Data_from_2010_to_2019.csv", header=True, inferSchema=True)
-        sql_(df)
+    def query(self, file_type="csv", method="sql"):
+        if file_type == "csv":
+            df = self.spark.read.csv(self.csv_path, header=True, inferSchema=True)
+        elif file_type == "parquet":
+            df = self.spark.read.parquet(self.parquet_path, header=True, inferSchema=True)
+        else:
+            raise ValueError("Wrong file type")
 
-    def parquet_sql(self):
-        df = self.spark.read.parquet("data/Crime_Data_from_2010_to_2019.parquet", header=True, inferSchema=True)
-        sql_(df)
+        if method == "sql":
+            sql_api(self.spark, df)
+        elif method == "spark_sql":
+            spark_sql(df)
+        elif method == "df":
+            # self.parquet_sql()
+            pass
+        else:
+            raise ValueError("Wrong value")
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # convert_csv_to_parquet("data/Crime_Data_from_2010_to_2019.csv", "data/Crime_Data_from_2010_to_2019.parquet")
     Q1 = Q1("Top3MonthsCrimes", "data/Crime_Data_from_2010_to_2019.csv", "data/Crime_Data_from_2010_to_2019.parquet")
-    print("Parquet")
-    Q1.parquet_sql()
 
-    print("CSV")
-    Q1.csv_sql()
-
-    # Filter
-    # df.select("year").where(col("year") == "2010").show(15)
+    file_types = ["parquet", "csv"]
+    methods = ["sql", "spark_sql"]
+    for file_type in file_types:
+        for method in methods:
+            print(file_type, method)
+            Q1.query(file_type, method)
