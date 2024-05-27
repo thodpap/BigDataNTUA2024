@@ -3,7 +3,6 @@ from pyspark.sql.functions import col, udf, row_number
 from pyspark.sql.window import Window
 from pyspark.sql import functions as F
 from pyspark.sql.types import FloatType
-from pyspark.sql.functions import broadcast
 
 def convert_to_float(num):
     return float(num.replace('$', '').replace(',', ''))
@@ -95,18 +94,21 @@ class Q3:
             df_geolocation,
             df_incomes["Zip Code"] == df_geolocation["New Zip Code"],
             "inner").distinct()
+
         return df_geocoordinates
 
-    def convert_to_descent(self, df_crimes, df_geocoordinates):
+    def convert_to_descent(self, df_crimes, df_geocoordinates, use_default=True, join_operator=lambda x: x):
         # Step 3: join with df_crimes
         print("Convert_to_descent", df_crimes.count(), df_geocoordinates.count())
+
+        modified_geocoordinates = df_geocoordinates.hint("SHUFFLE_MERGE")
         crimes_df = df_crimes.join(
-            df_geocoordinates,
+            modified_geocoordinates,
             (df_geocoordinates["LAT"] == df_crimes["LAT"]) & (df_geocoordinates["LON"] == df_crimes["LON"]),
             "left"
         ).distinct()
 
-        crimes_df.explain(True)
+        crimes_df.explain()
 
         convert_to_color_udf = udf(lambda x: convert_code_to_descent(x))
         result = crimes_df.withColumn("descent", convert_to_color_udf(col("Vict Descent"))).groupBy(
@@ -114,7 +116,7 @@ class Q3:
 
         return result
 
-    def query(self, method=1):
+    def query(self, method=1, use_default=True, join_operator=lambda x: x):
         df_crimes, df_income, df_geolocation = self.read_datasets()
 
         col_name = "income"
@@ -124,8 +126,8 @@ class Q3:
         df_geocoordinates_high = self.filter_by_double_zipcodes(df_income_high_3, df_geolocation)
         df_geocoordinates_low = self.filter_by_double_zipcodes(df_income_bottom_3, df_geolocation)
 
-        descent_high = self.convert_to_descent(df_crimes, df_geocoordinates_high)
-        descent_low = self.convert_to_descent(df_crimes, df_geocoordinates_low)
+        descent_high = self.convert_to_descent(df_crimes, df_geocoordinates_high, use_default, join_operator)
+        descent_low = self.convert_to_descent(df_crimes, df_geocoordinates_low, use_default, join_operator)
 
         print("High income Results")
         descent_high.show()

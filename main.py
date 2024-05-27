@@ -57,11 +57,26 @@ def Q2_sol():
 
 def Q3_sol():
     from q3 import Q3
+    from pyspark.sql.functions import broadcast
     import time
 
     Q3 = Q3("Q3")
-    Q3.query()
+    start_time = time.time()
+    Q3.query(use_default=False, join_operator=broadcast)
+    elapsed_time = time.time() - start_time
+    print(f"Elapsed Time for csv rdd: {elapsed_time}")
+
+
+def Q4_sol():
+    from q4 import Q4
+    import time
+
+    Q4 = Q4("Q4")
+    start_time = time.time()
+    Q4.query()
+    elapsed_time = time.time() - start_time
+    print(f"Elapsed Time for csv rdd: {elapsed_time}")
 
 
 if __name__ == '__main__':
-    Q3_sol()
+    Q4_sol()

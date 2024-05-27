@@ -53,6 +53,7 @@ class Q2:
     def __init__(self, name, csv_path="data/Crime_Data_from_2010_to_2019.csv"):
         self.spark = SparkSession.builder.appName(name).getOrCreate()
         self.csv_path = csv_path
+        self.name = name
 
     def query(self, file_type="csv", method="spark_sql", run_filter_first=True):
         if method == "rdd":
@@ -78,3 +79,5 @@ class Q2:
 
     def clear_cache(self):
         self.spark.catalog.clearCache()
+        self.spark.stop()
+        self.spark = SparkSession.builder.appName(self.name).getOrCreate()
