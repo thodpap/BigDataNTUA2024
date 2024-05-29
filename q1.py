@@ -67,6 +67,7 @@ class Q1:
         self.spark = SparkSession.builder.appName(name).getOrCreate()
         self.csv_path = csv_path
         self.parquet_path = parquet_path
+        self.name = name
         try:
             self.write_parquet()
         except Exception as e:
@@ -96,6 +97,8 @@ class Q1:
 
     def clear_cache(self):
         self.spark.catalog.clearCache()
+        self.spark.stop()
+        self.spark = SparkSession.builder.appName(self.name).getOrCreate()
 
 
 # Press the green button in the gutter to run the script.

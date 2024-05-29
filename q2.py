@@ -2,9 +2,14 @@ from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import col, udf
 from pyspark.sql.types import StringType
 
-
 def find_part_of_day(time_occ_):
     time_occ = str(time_occ_)
+    if len(time_occ) < 4:
+        '''0020 =>(int) 20 => "00" + "20" => "0020"'''
+        a = 4 - len(time_occ)
+        s = "0" * a
+        time_occ = s + time_occ
+
     if "2100" <= time_occ or time_occ < "0500":
         return "NIGHT"
 

@@ -1,3 +1,34 @@
+'''
+1. Broadcast Join (broadcast):
+
+    Used when: One side of the join is significantly smaller than the other.
+    Advantages: Minimizes the data shuffled between nodes because the smaller dataset is broadcasted to all nodes.
+    Limitations: Not suitable if the smaller dataset isn't small enough to fit in memory.
+    Performance: In your logs, hints to use broadcast were not supported due to the nature of the join, possibly indicating that the data was too large or not appropriate for a broadcast join.
+
+2. Sort Merge Join (sortmerge):
+
+    Used when: Both datasets are large, and neither can be efficiently broadcasted.
+    Advantages: Efficient for large datasets as it involves sorting data on the join keys and then merging, which is generally scalable.
+    Limitations: High overhead due to sorting and shuffling data.
+    Performance: This seems to be Spark's fallback method when other hints are not followed, suggesting it's the safest option for large datasets.
+
+3. Shuffle Hash Join (shuffle_hash):
+
+    Used when: Both datasets are large, but manageable enough that a hash table can be built for at least one side.
+    Advantages: Can be faster than sort merge joins if one side of the join is moderately sized because it avoids sorting.
+    Limitations: Requires sufficient memory to maintain a hash table of one of the datasets.
+    Performance: Warnings in your logs suggest that Spark did not apply this hint, possibly due to memory constraints or size issues.
+
+4. Shuffle Replicate NL Join (shuffle_replicate_nl):
+
+    Used when: You need to force a nested loop join, typically used for Cartesian products.
+    Advantages: Necessary when specific non-equi joins or complex conditions are involved.
+    Limitations: Highly inefficient for large datasets due to the nature of nested loops.
+    Performance: It's the least efficient for large datasets and suitable for specific scenarios only.
+
+
+'''
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import col, udf, row_number
 from pyspark.sql.window import Window
@@ -42,6 +73,7 @@ class Q3:
         self.crimes_csv_path = crimes_csv_path
         self.income_csv_path = income_csv_path
         self.revgecoding_csv_path = revgecoding_csv_path
+        self.name = name
 
     def read_datasets(self):
         df_crimes = self.spark.read.csv(self.crimes_csv_path, header=True, inferSchema=True)
@@ -97,17 +129,18 @@ class Q3:
 
         return df_geocoordinates
 
-    def convert_to_descent(self, df_crimes, df_geocoordinates, use_default=True, join_operator=lambda x: x):
+    def convert_to_descent(self, df_crimes, df_geocoordinates, join_operator=""):
         # Step 3: join with df_crimes
         print("Convert_to_descent", df_crimes.count(), df_geocoordinates.count())
 
-        modified_geocoordinates = df_geocoordinates.hint("SHUFFLE_MERGE")
+        if len(join_operator) > 0:
+            df_crimes = df_crimes.hint(join_operator)
+
         crimes_df = df_crimes.join(
-            modified_geocoordinates,
+            df_geocoordinates,
             (df_geocoordinates["LAT"] == df_crimes["LAT"]) & (df_geocoordinates["LON"] == df_crimes["LON"]),
             "left"
         ).distinct()
-
         crimes_df.explain()
 
         convert_to_color_udf = udf(lambda x: convert_code_to_descent(x))
@@ -116,7 +149,7 @@ class Q3:
 
         return result
 
-    def query(self, method=1, use_default=True, join_operator=lambda x: x):
+    def query(self, method=1, join_operator=""):
         df_crimes, df_income, df_geolocation = self.read_datasets()
 
         col_name = "income"
@@ -126,8 +159,8 @@ class Q3:
         df_geocoordinates_high = self.filter_by_double_zipcodes(df_income_high_3, df_geolocation)
         df_geocoordinates_low = self.filter_by_double_zipcodes(df_income_bottom_3, df_geolocation)
 
-        descent_high = self.convert_to_descent(df_crimes, df_geocoordinates_high, use_default, join_operator)
-        descent_low = self.convert_to_descent(df_crimes, df_geocoordinates_low, use_default, join_operator)
+        descent_high = self.convert_to_descent(df_crimes, df_geocoordinates_high, join_operator)
+        descent_low = self.convert_to_descent(df_crimes, df_geocoordinates_low, join_operator)
 
         print("High income Results")
         descent_high.show()
@@ -137,3 +170,7 @@ class Q3:
 
     def clear_cache(self):
         self.spark.catalog.clearCache()
+        self.spark.sparkContext.stop()
+        self.spark.stop()
+
+        self.spark = SparkSession.builder.appName(self.name).getOrCreate()

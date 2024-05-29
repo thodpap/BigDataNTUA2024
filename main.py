@@ -61,11 +61,30 @@ def Q3_sol():
     import time
 
     Q3 = Q3("Q3")
-    start_time = time.time()
-    Q3.query(use_default=False, join_operator=broadcast)
-    elapsed_time = time.time() - start_time
-    print(f"Elapsed Time for csv rdd: {elapsed_time}")
 
+    join_operations = ["broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"] # "broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"]
+    for join_operation in join_operations:
+        start_time = time.time()
+        Q3.query(join_operator=join_operation)
+        elapsed_time = time.time() - start_time
+        print(f"Elapsed Time for csv {join_operation}: {elapsed_time}")
+
+        Q3.clear_cache()
+
+    '''
+    1st run
+    Elapsed Time for csv broadcast: 11.144367456436157
+    Elapsed Time for csv merge: 6.682438611984253
+    Elapsed Time for csv shuffle_hash: 6.140656471252441
+    Elapsed Time for csv shuffle_replicate_nl: 6.220264911651611
+    
+    2nd run
+    Elapsed Time for csv broadcast: 5.889440059661865
+    Elapsed Time for csv merge: 5.74584174156189
+    Elapsed Time for csv shuffle_hash: 5.835217475891113
+    Elapsed Time for csv shuffle_replicate_nl: 5.7729105949401855
+    '''
+    
 
 def Q4_sol():
     from q4 import Q4
