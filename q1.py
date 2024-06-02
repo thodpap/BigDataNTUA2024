@@ -63,19 +63,27 @@ def sql_api(spark, df):
 
 
 class Q1:
-    def __init__(self, name, csv_path="data/Crime_Data_from_2010_to_2019.csv", parquet_path="data/Crime_Data_from_2010_to_2019.parquet"):
+    def __init__(self,
+                 name,
+                 csv_path="data/Crime_Data_from_2010_to_2019.csv",
+                 csv_path_2="data/Crime_Data_from_2020_to_Present.csv",
+                 parquet_path="data/Crime_Data_from_2010_to_Present.parquet"):
         self.spark = SparkSession.builder.appName(name).getOrCreate()
         self.csv_path = csv_path
+        self.csv_path_2 = csv_path_2
         self.parquet_path = parquet_path
         self.name = name
         try:
             self.write_parquet()
+            print("parquet")
         except Exception as e:
             print(e)
 
     def write_parquet(self):
         # Read the CSV file into a DataFrame
         df = self.spark.read.csv(self.csv_path, header=True, inferSchema=True)
+        df2 = self.spark.read.csv(self.csv_path_2, header=True, inferSchema=True)
+        df = df.union(df2)
 
         # Write the DataFrame to Parquet format
         df.write.parquet(self.parquet_path)
@@ -83,6 +91,8 @@ class Q1:
     def query(self, file_type="csv", method="sql"):
         if file_type == "csv":
             df = self.spark.read.csv(self.csv_path, header=True, inferSchema=True)
+            df2 = self.spark.read.csv(self.csv_path_2, header=True, inferSchema=True)
+            df = df.union(df2)
         elif file_type == "parquet":
             df = self.spark.read.parquet(self.parquet_path, header=True, inferSchema=True)
         else:

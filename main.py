@@ -3,7 +3,7 @@ def Q1_sol():
     import time
 
     import datetime
-    Q1 = Q1("Top3MonthsCrimes", "data/Crime_Data_from_2010_to_2019.csv", "data/Crime_Data_from_2010_to_2019.parquet")
+    Q1 = Q1("Top3MonthsCrimes")
 
     file_types = ["parquet", "csv"]
     methods = ["sql", "spark_sql"]
@@ -26,13 +26,15 @@ def Q2_sol():
     csv_file = "data/Crime_Data_from_2010_to_2019.csv"
     Q2 = Q2("CrimesPerDayType", csv_file)
 
+    print("First execution - doesn't count")
     Q2.query("csv", "spark_sql")
     Q2.clear_cache()
 
-    iteratios = 1
+    print("START EXPERIMENT")
+    iterations = 1
     # Run multiple times to see actual time
     avg = []
-    for i in range(iteratios):
+    for i in range(iterations):
         start_time = time.time()
         Q2.query("csv", "spark_sql", False)
         elapsed_time = time.time() - start_time
@@ -41,7 +43,7 @@ def Q2_sol():
     print(f"Elapsed Time for csv spark_sql (run filter after): {sum(avg) / len(avg)}")
 
     avg = []
-    for i in range(iteratios):
+    for i in range(iterations):
         start_time = time.time()
         Q2.query("csv", "spark_sql")
         elapsed_time = time.time() - start_time
@@ -95,6 +97,15 @@ def Q4_sol():
     Q4.query()
     elapsed_time = time.time() - start_time
     print(f"Elapsed Time for csv rdd: {elapsed_time}")
+    Q4.clear_cache()
+
+    for type_ in ["broadcast", "repartition", "none"]:
+        start_time = time.time()
+        Q4.query("broadcast")
+        elapsed_time = time.time() - start_time
+        print(f"Elapsed Time for csv rdd with {type_}: {elapsed_time}")
+        Q4.clear_cache()
+
 
 
 if __name__ == '__main__':

@@ -25,6 +25,22 @@ def find_part_of_day(time_occ_):
     raise ValueError(f"Something bad {time_occ}")
 
 
+def parse_csv_line(line):
+    result = []
+    current = ''
+    in_quotes = False
+    for char in line:
+        if char == '"' and (not current or current[-1] != '\\'):  # Check for quote that is not escaped
+            in_quotes = not in_quotes  # Toggle state
+        elif char == ',' and not in_quotes:
+            result.append(current)
+            current = ''
+        else:
+            current += char
+    if current:
+        result.append(current)
+    return result
+
 def spark_sql(df, run_filter_first=True):
     if run_filter_first:
         df = df.where(col("Premis Desc") == "STREET")
@@ -43,8 +59,8 @@ def spark_sql(df, run_filter_first=True):
 def rdd(df_rdd):
     parsed_data = (
         df_rdd
+        .filter(lambda row: row[3] == "STREET")
         .map(lambda row: (row[3], row[15]))
-        .filter(lambda row: row[1] == "STREET")
         .map(lambda row: (find_part_of_day(row[0]), 1))
         .reduceByKey(lambda a, b: a+b)
         .map(lambda row: (row[1], row[0]))
@@ -55,23 +71,33 @@ def rdd(df_rdd):
 
 
 class Q2:
-    def __init__(self, name, csv_path="data/Crime_Data_from_2010_to_2019.csv"):
+    def __init__(self, name, csv_path="data/Crime_Data_from_2010_to_2019.csv",
+                 csv_path_2="data/Crime_Data_from_2020_to_Present.csv"):
         self.spark = SparkSession.builder.appName(name).getOrCreate()
         self.csv_path = csv_path
+        self.csv_path_2 = csv_path_2
         self.name = name
 
     def query(self, file_type="csv", method="spark_sql", run_filter_first=True):
         if method == "rdd":
-            # reading through the text file might be faster, however, in columns where it has
-            # text as "some text, some other text", when we split with "," we don't actually split hte commas but rather
-            # we split any comma, meaning we don't get the proper scheme of our data.
-            # rdd_ = self.spark.sparkContext.textFile(self.csv_path)
-            # header = rdd_.first()  # This is the header
-            # rdd_ = rdd_.filter(lambda line: line != header)
+            # df = self.spark.read.csv(self.csv_path, header=True, inferSchema=True).rdd
+            rdd_ = self.spark.sparkContext.textFile(self.csv_path)
+            rdd2 = self.spark.sparkContext.textFile(self.csv_path_2)
 
-            df = self.spark.read.csv(self.csv_path, header=True, inferSchema=True).rdd
+            header = rdd_.first()  # This is the header
+            header2 = rdd2.first()
+
+            rdd_ = rdd_.filter(lambda line: line != header)
+            rdd2 = rdd2.filter(lambda line: line != header2)
+
+            df = rdd_.map(parse_csv_line)
+            df2 = rdd2.map(parse_csv_line)
+
+            df = df.union(df2)
         elif file_type == "csv":
             df = self.spark.read.csv(self.csv_path, header=True, inferSchema=True)
+            df2 = self.spark.read.csv(self.csv_path_2, header=True, inferSchema=True)
+            df = df.union(df2)
         else:
             raise ValueError("Wrong file type")
 
