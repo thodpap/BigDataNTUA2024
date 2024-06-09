@@ -1,8 +1,9 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, udf, row_number, broadcast
 from pyspark.sql.types import BooleanType
-import geopy.distance
+from geopy.distance import geodesic
 
+hdfs_path = 'hdfs://master:9000/datasets/'
 
 def parse_csv_line(line):
     result = []
@@ -31,7 +32,7 @@ def get_distance(x):
     coordinates_one, data_2 = x[1]
     coordinates_two, division = data_2
 
-    return key, (geopy.distance.geodesic(coordinates_one, coordinates_two).km, 1, division)
+    return key, (geodesic(coordinates_one, coordinates_two).km, 1, division)
 
 
 def format_coordinates(x, pos_lat=1, pos_lon=0):
@@ -56,11 +57,12 @@ def format_coordinates(x, pos_lat=1, pos_lon=0):
 
 class Q4:
     def __init__(self, name,
-                 crimes_csv_path="data/Crime_Data_from_2010_to_2019.csv",
-                 csv_path_2="data/Crime_Data_from_2020_to_Present.csv",
-                 lapd_stations_csv_path="data/LAPD_Stations_New.csv",
-                 revgecoding_csv_path="data/revgecoding.csv"):
+                 crimes_csv_path=hdfs_path + "Crime_Data_from_2010_to_2019.csv",
+                 csv_path_2=hdfs_path + "Crime_Data_from_2020_to_Present.csv",
+                 lapd_stations_csv_path=hdfs_path + "LAPD_Stations_New.csv",
+                 revgecoding_csv_path="revgecoding.csv"):
         self.spark = SparkSession.builder.appName(name).getOrCreate()
+        
         self.crimes_csv_path = crimes_csv_path
         self.csv_path_2 = csv_path_2
         self.lapd_stations_csv_path = lapd_stations_csv_path
@@ -130,3 +132,21 @@ class Q4:
         self.spark.catalog.clearCache()
         self.spark.stop()
         self.spark = SparkSession.builder.appName(self.name).getOrCreate()
+
+
+if __name__ == "__main__":
+    import time
+
+    Q4 = Q4("Q4")
+    start_time = time.time()
+    Q4.query()
+    elapsed_time = time.time() - start_time
+    print(f"Elapsed Time for csv rdd: {elapsed_time}")
+    Q4.clear_cache()
+
+    for type_ in ["broadcast", "repartition", "none"]:
+        start_time = time.time()
+        Q4.query("broadcast")
+        elapsed_time = time.time() - start_time
+        print(f"Elapsed Time for csv rdd with {type_}: {elapsed_time}")
+        Q4.clear_cache()

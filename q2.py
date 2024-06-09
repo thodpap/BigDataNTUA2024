@@ -2,6 +2,8 @@ from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import col, udf
 from pyspark.sql.types import StringType
 
+hdfs_path = 'hdfs://master:9000/datasets/'
+
 def find_part_of_day(time_occ_):
     time_occ = str(time_occ_)
     if len(time_occ) < 4:
@@ -71,8 +73,8 @@ def rdd(df_rdd):
 
 
 class Q2:
-    def __init__(self, name, csv_path="data/Crime_Data_from_2010_to_2019.csv",
-                 csv_path_2="data/Crime_Data_from_2020_to_Present.csv"):
+    def __init__(self, name, csv_path=hdfs_path + "Crime_Data_from_2010_to_2019.csv",
+                 csv_path_2=hdfs_path + "Crime_Data_from_2020_to_Present.csv"):
         self.spark = SparkSession.builder.appName(name).getOrCreate()
         self.csv_path = csv_path
         self.csv_path_2 = csv_path_2
@@ -112,3 +114,39 @@ class Q2:
         self.spark.catalog.clearCache()
         self.spark.stop()
         self.spark = SparkSession.builder.appName(self.name).getOrCreate()
+
+
+if __name__ == '__main__':
+    import time
+    Q2 = Q2("CrimesPerDayType")
+
+    print("First execution - doesn't count")
+    Q2.query("csv", "spark_sql")
+    Q2.clear_cache()
+
+    print("START EXPERIMENT")
+    iterations = 1
+    # Run multiple times to see actual time
+    avg = []
+    for i in range(iterations):
+        start_time = time.time()
+        Q2.query("csv", "spark_sql", False)
+        elapsed_time = time.time() - start_time
+        avg.append(elapsed_time)
+        Q2.clear_cache()
+    print(f"Elapsed Time for csv spark_sql (run filter after): {sum(avg) / len(avg)}")
+
+    avg = []
+    for i in range(iterations):
+        start_time = time.time()
+        Q2.query("csv", "spark_sql")
+        elapsed_time = time.time() - start_time
+        avg.append(elapsed_time)
+        Q2.clear_cache()
+    print(f"Elapsed Time for csv spark_sql: {sum(avg) / len(avg)}")
+
+    start_time = time.time()
+    Q2.query("csv", "rdd")
+    elapsed_time = time.time() - start_time
+    print(f"Elapsed Time for csv rdd: {elapsed_time}")
+    Q2.clear_cache()

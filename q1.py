@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession, Window
 from pyspark.sql.functions import col, rank
 
+hdfs_path = 'hdfs://master:9000/datasets/'
 
 def spark_sql(df):
     # TODO: Ask about DATE OCC or DATE RPRT
@@ -22,7 +23,7 @@ def spark_sql(df):
     df = df.orderBy(col("year"), col("crime_total").desc())
     df = df.where(col("rank") <= 3)
 
-    # df.show()
+    df.show(100)
 
 def sql_api(spark, df):
     # Create a temporary view from the DataFrame
@@ -57,7 +58,7 @@ def sql_api(spark, df):
     """)
 
     # Show the result
-    # top3_months_df.show()
+    top3_months_df.show(100)
 
     # return top3_months_df
 
@@ -65,9 +66,9 @@ def sql_api(spark, df):
 class Q1:
     def __init__(self,
                  name,
-                 csv_path="data/Crime_Data_from_2010_to_2019.csv",
-                 csv_path_2="data/Crime_Data_from_2020_to_Present.csv",
-                 parquet_path="data/Crime_Data_from_2010_to_Present.parquet"):
+                 csv_path=hdfs_path + "Crime_Data_from_2010_to_2019.csv",
+                 csv_path_2=hdfs_path + "Crime_Data_from_2020_to_Present.csv",
+                 parquet_path=hdfs_path + "Crime_Data_from_2010_to_Present.parquet"):
         self.spark = SparkSession.builder.appName(name).getOrCreate()
         self.csv_path = csv_path
         self.csv_path_2 = csv_path_2
@@ -113,8 +114,8 @@ class Q1:
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # convert_csv_to_parquet("data/Crime_Data_from_2010_to_2019.csv", "data/Crime_Data_from_2010_to_2019.parquet")
-    Q1 = Q1("Top3MonthsCrimes", "data/Crime_Data_from_2010_to_2019.csv", "data/Crime_Data_from_2010_to_2019.parquet")
+    # convert_csv_to_parquet("Crime_Data_from_2010_to_2019.csv", "Crime_Data_from_2010_to_2019.parquet")
+    Q1 = Q1("Top3MonthsCrimes")
 
     file_types = ["parquet", "csv"]
     methods = ["sql", "spark_sql"]
@@ -122,3 +123,4 @@ if __name__ == '__main__':
         for method in methods:
             print(file_type, method)
             Q1.query(file_type, method)
+            Q1.clear_cache()

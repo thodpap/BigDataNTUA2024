@@ -23,8 +23,7 @@ def Q2_sol():
     from q2 import Q2
     import time
 
-    csv_file = "data/Crime_Data_from_2010_to_2019.csv"
-    Q2 = Q2("CrimesPerDayType", csv_file)
+    Q2 = Q2("CrimesPerDayType")
 
     print("First execution - doesn't count")
     Q2.query("csv", "spark_sql")
@@ -59,12 +58,9 @@ def Q2_sol():
 
 def Q3_sol():
     from q3 import Q3
-    from pyspark.sql.functions import broadcast
     import time
-
     Q3 = Q3("Q3")
-
-    join_operations = ["broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"] # "broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"]
+    join_operations = ["broadcast"] #, "merge", "shuffle_hash", "shuffle_replicate_nl"] # "broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"]
     for join_operation in join_operations:
         start_time = time.time()
         Q3.query(join_operator=join_operation)
@@ -109,4 +105,4 @@ def Q4_sol():
 
 
 if __name__ == '__main__':
-    Q4_sol()
+    Q3_sol()
