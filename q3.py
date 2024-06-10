@@ -68,12 +68,9 @@ def convert_code_to_descent(code):
 
 class Q3:
     def __init__(self, name,
-                 crimes_csv_path="data/Crime_Data_from_2010_to_2019.csv",
-                 income_csv_path="data/income/LA_income_2015.csv",
-                 revgecoding_csv_path="data/revgecoding.csv"):
-                 # crimes_csv_path=hdfs_path + "Crime_Data_from_2010_to_2019.csv",
-                 # income_csv_path=hdfs_path + "income/LA_income_2015.csv",
-                 # revgecoding_csv_path=hdfs_path + "revgecoding.csv"):
+                 crimes_csv_path=hdfs_path + "Crime_Data_from_2010_to_2019.csv",
+                 income_csv_path=hdfs_path + "income/LA_income_2015.csv",
+                 revgecoding_csv_path=hdfs_path + "revgecoding.csv"):
         self.spark = SparkSession.builder.appName(name).getOrCreate()
         self.crimes_csv_path = crimes_csv_path
         self.income_csv_path = income_csv_path
@@ -126,13 +123,19 @@ class Q3:
     def get_upper_3(self, df_income, col_name):
         return df_income.orderBy(col(col_name).desc()).limit(3)
 
-    def filter_by_double_zipcodes(self, df_incomes, df_geolocation):
+    def filter_by_double_zipcodes(self, df_incomes, df_geolocation, join_operator=""):
+        if len(join_operator) > 0:
+            df_geolocation = df_geolocation.hint(join_operator)
+            df_incomes = df_incomes.hint(join_operator)
         # Inner join between incomes and geolocation
         df_geocoordinates = df_incomes.join(
             df_geolocation,
             df_incomes["Zip Code"] == df_geolocation["New Zip Code"],
             "inner").distinct()
 
+        df_geocoordinates.explain(mode="extended")
+        print("Explain descent on double zipcodes")
+        
         return df_geocoordinates
 
     def convert_to_descent(self, df_crimes, df_geocoordinates, join_operator=""):
@@ -140,6 +143,7 @@ class Q3:
         print("Convert_to_descent", df_crimes.count(), df_geocoordinates.count())
 
         if len(join_operator) > 0:
+            df_geocoordinates = df_geocoordinates.hint(join_operator)
             df_crimes = df_crimes.hint(join_operator)
 
         crimes_df = df_geocoordinates.join(
@@ -147,8 +151,8 @@ class Q3:
             (df_geocoordinates["LAT"] == df_crimes["LAT"]) & (df_geocoordinates["LON"] == df_crimes["LON"]),
             "left"
         ).distinct()
-        crimes_df.explain()
-        print("Explain descent")
+        crimes_df.explain(mode="extended")
+        print("Explain descent on crimes")
 
         convert_to_color_udf = udf(lambda x: convert_code_to_descent(x))
         result = crimes_df.withColumn("descent", convert_to_color_udf(col("Vict Descent"))).groupBy(
@@ -165,8 +169,8 @@ class Q3:
         df_income_high_3.show()
         df_income_bottom_3.show()
 
-        df_geocoordinates_high = self.filter_by_double_zipcodes(df_income_high_3, df_geolocation)
-        df_geocoordinates_low = self.filter_by_double_zipcodes(df_income_bottom_3, df_geolocation)
+        df_geocoordinates_high = self.filter_by_double_zipcodes(df_income_high_3, df_geolocation, join_operator)
+        df_geocoordinates_low = self.filter_by_double_zipcodes(df_income_bottom_3, df_geolocation, join_operator)
 
         df_geocoordinates_low.select("Community", "income", "LAT", "LON").show()
         df_geocoordinates_high.select("Zip Code", "Community", "income", "LAT", "LON").show()
@@ -193,7 +197,7 @@ if __name__ == "__main__":
 
     Q3 = Q3("Q3")
 
-    join_operations = ["broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"] # "broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"]
+    join_operations = [""] # "broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"] # "broadcast", "merge", "shuffle_hash", "shuffle_replicate_nl"]
     for join_operation in join_operations:
         start_time = time.time()
         Q3.query(join_operator=join_operation)

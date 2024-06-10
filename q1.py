@@ -3,6 +3,33 @@ from pyspark.sql.functions import col, rank
 
 hdfs_path = 'hdfs://master:9000/datasets/'
 
+
+def print_dictionary(dictionary):
+    # Extract the data and organize it into rows
+    rows = []
+    for file_type, methods in dictionary.items():
+        for method, elapsed_time in methods.items():
+            rows.append([file_type, method, elapsed_time])
+
+    # Define the header
+    header = ["file_type", "method", "elapsed_time"]
+
+    # Define the column widths
+    col_widths = [max(len(str(item)) for item in col) for col in zip(*([header] + rows))]
+
+    # Create a format string for each row
+    row_format = '| ' + ' | '.join(f'{{:<{width}}}' for width in col_widths) + ' |'
+
+    # Print the header
+    print(row_format.format(*header))
+    print('|-' + '-|-'.join('-' * width for width in col_widths) + '-|')
+
+    # Print each row of the table
+    for row in rows:
+        print(row_format.format(*row))
+    print('|-' + '-|-'.join('-' * width for width in col_widths) + '-|')
+
+
 def spark_sql(df):
     # TODO: Ask about DATE OCC or DATE RPRT
     df = df.withColumn("year", col("DATE OCC").substr(7, 4))
@@ -24,6 +51,7 @@ def spark_sql(df):
     df = df.where(col("rank") <= 3)
 
     df.show(100)
+
 
 def sql_api(spark, df):
     # Create a temporary view from the DataFrame
@@ -115,12 +143,24 @@ class Q1:
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     # convert_csv_to_parquet("Crime_Data_from_2010_to_2019.csv", "Crime_Data_from_2010_to_2019.parquet")
+    import time
+
     Q1 = Q1("Top3MonthsCrimes")
 
     file_types = ["parquet", "csv"]
     methods = ["sql", "spark_sql"]
+    dictionary = {}
     for file_type in file_types:
+        if file_type not in dictionary:
+            dictionary[file_type] = {}
+
         for method in methods:
-            print(file_type, method)
+            start_time = time.time()
             Q1.query(file_type, method)
+            elapsed_time = time.time() - start_time
+
             Q1.clear_cache()
+            print(f"Elapsed Time for {file_type} {method}: {elapsed_time}")
+            dictionary[file_type][method] = elapsed_time
+
+    print_dictionary(dictionary)

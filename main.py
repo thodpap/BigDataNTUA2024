@@ -89,20 +89,21 @@ def Q4_sol():
     import time
 
     Q4 = Q4("Q4")
-    start_time = time.time()
-    Q4.query()
-    elapsed_time = time.time() - start_time
-    print(f"Elapsed Time for csv rdd: {elapsed_time}")
-    Q4.clear_cache()
 
-    for type_ in ["broadcast", "repartition", "none"]:
-        start_time = time.time()
-        Q4.query("broadcast")
-        elapsed_time = time.time() - start_time
-        print(f"Elapsed Time for csv rdd with {type_}: {elapsed_time}")
-        Q4.clear_cache()
+    dictionary = {}
+    for join_type in ["broadcast", "repartition", "none"]:
+        if join_type not in dictionary:
+            dictionary[join_type] = {}
+        for type_ in ["rdd", "spark"]:
+            start_time = time.time()
+            Q4.query(join_type, type_)
+            elapsed_time = time.time() - start_time
+            print(f"Elapsed Time for csv rdd with {type_}: {elapsed_time}")
+            Q4.clear_cache()
+            dictionary[join_type][type_] = elapsed_time
 
-
+    from q4 import print_dictionary
+    print_dictionary(dictionary)
 
 if __name__ == '__main__':
-    Q3_sol()
+    Q4_sol()
