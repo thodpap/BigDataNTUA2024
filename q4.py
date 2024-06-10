@@ -172,7 +172,7 @@ class Q4:
                                  x[1][0] / x[1][1] if x[1][1] != 0.0 else 1000000,
                                  x[1][1]))
                  ).sortBy(lambda x: x[2], ascending=False)
-        results = final.collect()[:10]
+        results = final.collect()[:35]
         for result in results:
             print(result)
 
@@ -207,7 +207,7 @@ class Q4:
             count("*").alias("count")
         ).sort(col("count").desc())
 
-        final_df.show()
+        final_df.show(35)
 
     def query(self, join_type="broadcast", type_="rdd"):
         if type_ == "rdd":
