@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="6a2a78b4-2b28-48c9-ba8b-99c8df354f64" name="Changes" comment="">
+    <list default="true" id="6a2a78b4-2b28-48c9-ba8b-99c8df354f64" name="Changes" comment="added convert to parquet script that was requested">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/q1.py" beforeDir="false" afterPath="$PROJECT_DIR$/q1.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/q2.py" beforeDir="false" afterPath="$PROJECT_DIR$/q2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/q3.py" beforeDir="false" afterPath="$PROJECT_DIR$/q3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/q4.py" beforeDir="false" afterPath="$PROJECT_DIR$/q4.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -93,9 +89,31 @@
       <option name="presentableId" value="Default" />
       <updated>1716625074687</updated>
     </task>
+    <task id="LOCAL-00001" summary="finalized changes on code for running on VMs">
+      <option name="closed" value="true" />
+      <created>1717924325393</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1717924325393</updated>
+    </task>
+    <task id="LOCAL-00002" summary="added convert to parquet script that was requested">
+      <option name="closed" value="true" />
+      <created>1717924347668</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1717924347668</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="UnknownFeatures">
     <option featureType="com.intellij.fileTypeFactory" implementationName="*.csv" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="finalized changes on code for running on VMs" />
+    <MESSAGE value="added convert to parquet script that was requested" />
+    <option name="LAST_COMMIT_MESSAGE" value="added convert to parquet script that was requested" />
   </component>
 </project>
