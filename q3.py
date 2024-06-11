@@ -69,16 +69,20 @@ def convert_code_to_descent(code):
 class Q3:
     def __init__(self, name,
                  crimes_csv_path=hdfs_path + "Crime_Data_from_2010_to_2019.csv",
+                 crimes_csv_path2=hdfs_path + "Crime_Data_from_2020_to_Present.csv",
                  income_csv_path=hdfs_path + "income/LA_income_2015.csv",
                  revgecoding_csv_path=hdfs_path + "revgecoding.csv"):
         self.spark = SparkSession.builder.appName(name).getOrCreate()
         self.crimes_csv_path = crimes_csv_path
+        self.crimes_csv_path2 = crimes_csv_path2
         self.income_csv_path = income_csv_path
         self.revgecoding_csv_path = revgecoding_csv_path
         self.name = name
 
     def read_datasets(self):
         df_crimes = self.spark.read.csv(self.crimes_csv_path, header=True, inferSchema=True)
+        df_crimes2 = self.spark.read.csv(self.crimes_csv_path2, header=True, inferSchema=True)
+        df_crimes = df_crimes.union(df_crimes2)
 
         # Filter only for year 2015 & Accept only those whose origin is known
         df_crimes = df_crimes.withColumn("year", col("DATE OCC").substr(7, 4))
@@ -151,6 +155,8 @@ class Q3:
             (df_geocoordinates["LAT"] == df_crimes["LAT"]) & (df_geocoordinates["LON"] == df_crimes["LON"]),
             "left"
         ).distinct()
+        crimes_df = crimes_df.where(col("Vict Descent").isNotNull())
+
         crimes_df.explain(mode="extended")
         print("Explain descent on crimes")
 
